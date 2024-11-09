@@ -327,7 +327,7 @@ dial-peer voice 82 Voip
 @@@@@@
 !@@@EDGE ROUTE CONFIG
 config t
-   hostname EDGE11
+   hostname EDGE41
    enable secret pass
    service password-encryption
    no logging console
@@ -342,18 +342,35 @@ config t
       exec-timeout 0 0
    Int Gi 0/0/0
      description INSIDE
-     ip add 10.12.12.1 255.255.255.0
+     ip add 10.41.41.1 255.255.255.0
 	 no shutdown
    Int Gi 0/0/1
      description OUTSIDE
-	 ip add 200.0.0.12 255.255.255.0
+	 ip add 200.0.0.41 255.255.255.0
 	 no shutdown
    Int Loopback 0
      description VIRTUALIP
-	 ip add 12.0.0.1 255.255.255.255
+	 ip add 41.0.0.1 255.255.255.255
  end
 
- 
+!MULTI AREA OSPF CONFIGURATION
+@edge:
+config t
+router ospf 1
+router-id 41.0.0.1
+network 200.0.0.0 0.0.0.255 area 0
+network 41.0.0.1 0.0.0.0 area 41
+network 10.41.41.0 0.0.0.255 area 41
+@CoreBABA: use route summarization:
+config t
+router ospf 1
+network 10.41.0.0 0.0.255.255 area 41
+@CUCM: useSuperTamad method:
+config t
+router ospf 1
+network 0.0.0.0 255.255.255.255 area 41
+end
+
  !!! EDGE route NOT dikit to ClassMate:
  conf t
  ip routing 
