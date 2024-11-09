@@ -1,6 +1,6 @@
 !@@@FOR CORE TAAS ONLY
 config t
-   hostname CORETAAS-M
+   hostname CORETAAS-41
    enable secret pass
    service password-encryption
    no logging console
@@ -15,19 +15,19 @@ config t
       exec-timeout 0 0
    Int Vlan 1
      no shutdown
-	 ip add 10.M.1.2 255.255.255.0
+	 ip add 10.41.1.2 255.255.255.0
 	 description MGMTDATA
    Int Vlan 10
      no shutdown
-	 ip add 10.M.10.2 255.255.255.0
+	 ip add 10.41.10.2 255.255.255.0
 	 description WIRELESS
    Int Vlan 50
      no shutdown
-	 ip add 10.M.50.2 255.255.255.0
+	 ip add 10.41.50.2 255.255.255.0
 	 description IPCCTV
    Int Vlan 100
      no shutdown
-	 ip add 10.M.100.2 255.255.255.0
+	 ip add 10.41.100.2 255.255.255.0
 	 description VOICEVLAN
 
 !@@@LeafSwitchONLY
@@ -48,55 +48,76 @@ config t
    Int Gi 0/1
      no shutdown
 	  no switchport
-	  ip add 10.M.M.4 255.255.255.0
+	  ip add 10.41.41.4 255.255.255.0
    Int Vlan 1
      no shutdown
-	 ip add 10.M.1.4 255.255.255.0
+	 ip add 10.41.1.4 255.255.255.0
 	 description MGMTDATA
    Int Vlan 10
      no shutdown
-	 ip add 10.M.10.4 255.255.255.0
+	 ip add 10.41.10.4 255.255.255.0
 	 description WIRELESS
    Int Vlan 50
      no shutdown
-	 ip add 10.M.50.4 255.255.255.0
+	 ip add 10.41.50.4 255.255.255.0
 	 description IPCCTV
    Int Vlan 100
      no shutdown
-	 ip add 10.12.100.4 255.255.255.0
+	 ip add 10.41.100.4 255.255.255.0
 	 description VOICEVLAN
-	 
+
+EncorLAB: trunk it, etherchannit, allowit
+taas/baba:
+config t
+Interface Range Fa0/10-12
+ switchport trunk encapsulation Dot1Q
+ switchport mode trunk
+ switchport trunk allowed vlan 1,10,50,100,999
+ !Enable LinkAggregation CP etherchannel
+ Channel-group 10 mode active
+ channel-protocol lacp
+ do show etherchannel summary
+
 !DHCP: DYNAMIC HOST CONFIGURATION PROTOCOL
 !@@@LEAF SWITCH
 config t
-ip dhcp Excluded-add 10._.1.1 10._.1.100
-ip dhcp Excluded-add 10._.10.1 10._.10.100
-ip dhcp Excluded-add 10._.50.1 10._.50.100
-ip dhcp Excluded-add 10._.100.1 10._.100.100
+ip dhcp Excluded-add 10.41.1.1 10.41.1.100
+ip dhcp Excluded-add 10.41.10.1 10.41.10.100
+ip dhcp Excluded-add 10.41.50.1 10.41.50.100
+ip dhcp Excluded-add 10.41.100.1 10.41.100.100
 ip dhcp pool MGMTDATA
-   network 10._.1.0 255.255.255.0
-   default-router 10._.1.4
+   network 10.41.1.0 255.255.255.0
+   default-router 10.41.1.4
    domain-name MGMTDATA.COM
-   dns-server 10._.1.10
+   dns-server 10.41.1.10
 ip dhcp pool WIFIDATA
-   network 10._.10.0 255.255.255.0
-   default-router 10._.10.4
+   network 10.41.10.0 255.255.255.0
+   default-router 10.41.10.4
    domain-name WIFIDATA.COM
-   dns-server 10._.1.10
+   dns-server 10.41.1.10
 ip dhcp pool IPCCTV
-   network 10._.50.0 255.255.255.0
-   default-router 10._.50.4
+   network 10.41.50.0 255.255.255.0
+   default-router 10.41.50.4
    domain-name IPCCTV.COM
-   dns-server 10._.1.10
+   dns-server 10.41.1.10
 ip dhcp pool VOICEVLAN
-   network 10._.100.0 255.255.255.0
-   default-router 10._.100.4
+   network 10.41.100.0 255.255.255.0
+   default-router 10.41.100.4
    domain-name VOICEVLAN.COM
-   dns-server 10._.1.10
-   option 150 ip 10._.100.8   
+   dns-server 10.41.1.10
+   option 150 ip 10.41.100.8   
    END
 
+VTP: VLAN TRUNKING PROTOCOL: NEEDS trunking, SYNC VLANS,
+CoreTAAS/BABA:
+config t
+vtp domain CCNP
+vtp password ENCOR401
+vtp mode server
+exit
+
 !!CREATING AND PLACING PORTS INSIDEAVLAN:
+CORETAAS:
 config t
 vlan 10
    name WIFIVLAN
@@ -104,6 +125,9 @@ vlan 50
    name IPCCTVLAN
 vlan 100
    name VOICEVLAN
+exit
+COREbaba:
+config t
 Int Fa 0/2
   switchport mode access
   switchport access vlan 10  
@@ -126,11 +150,22 @@ Int Fa 0/7
   switchport mode access
   switchport access vlan 100    
  end
- 
+
+IP CAMERA needs MAC dhcp reservation:
+CoreBABA:
+ip dhcp pool CAM6
+host 10.41.50.6 255.255.255.0
+client-identifier 001a.0706.c2fe
+ip dhcp pool CAM8
+host 10.41.50.8 255.255.255.0
+client-identifier 001a.0709.4929
+end
+sh ip dhcp binding
+
 !!cisco unified call manager Express command
 !@@@CUCM-M
 config t
-   hostname CUCM-12
+   hostname CUCM-41
    enable secret pass
    service password-encryption
    no logging console
@@ -145,22 +180,22 @@ config t
       exec-timeout 0 0
    Int Fa 0/0
      no shutdown
-	 ip add 10.12.100.8 255.255.255.0 
+	 ip add 10.41.100.8 255.255.255.0 
 	 end
    
 !!!CUCM ANALOG PHONES CONFIG
 configure terminal
 dial-peer voice 1 pots
-   destination-pattern 1200
+   destination-pattern 4100
    port 0/0/0
 dial-peer voice 2 pots
-   destination-pattern 1201
+   destination-pattern 4101
    port 0/0/1
 dial-peer voice 3 pots
-   destination-pattern 1202
+   destination-pattern 4102
    port 0/0/2
 dial-peer voice 4 pots
-   destination-pattern 1203
+   destination-pattern 4103
    port 0/0/3
 end
 
@@ -172,31 +207,31 @@ telephony-service
    no auto-reg-ephone
    max-ephones 5
    max-dn 20
-   ip source-address 10._.100.8 port 2000
+   ip source-address 10.41.100.8 port 2000
    create cnf-files
 ephone-dn 1
-  number _11
+  number 4111
 ephone-dn 2
-  number _22
+  number 4122
 ephone-dn 3
-  number _33
+  number 4133
 ephone-dn 4
-  number _44
+  number 4144
 ephone-dn 5
-  number _55
+  number 4155
 ephone-dn 6
-  number _66
+  number 4166
 ephone-dn 7
-  number _77
+  number 4177
 ephone-dn 8
-  number _88	
+  number 4188	
 Ephone 1
-  Mac-address ____.____.____
+  Mac-address b4e9.b0b1.715b
   type 8945
   button 1:1 2:3 3:2 4:4
   restart
 Ephone 2
-  Mac-address ____.____.____
+  Mac-address ccd8.c1fb.0ce9
   type 8945
   button 1:5 2:6 3:7 4:8
   restart  
@@ -228,10 +263,10 @@ configure terminal
  destination-pattern 11..
  session target ipv4:10.11.100.8
  codec g711ULAW
-!dial-peer voice 12 Voip
-! destination-pattern 12..
-! session target ipv4:10.12.100.8
-! codec g711ULAW
+dial-peer voice 12 Voip
+ destination-pattern 12..
+ session target ipv4:10.12.100.8
+ codec g711ULAW
 dial-peer voice 21 Voip
  destination-pattern 21..
  session target ipv4:10.21.100.8
@@ -248,10 +283,10 @@ dial-peer voice 32 Voip
  destination-pattern 32..
  session target ipv4:10.32.100.8
  codec g711ULAW
-dial-peer voice 41 Voip
- destination-pattern 41..
- session target ipv4:10.41.100.8
- codec g711ULAW
+!dial-peer voice 41 Voip
+ ! destination-pattern 41..
+ ! session target ipv4:10.41.100.8
+ ! codec g711ULAW
 dial-peer voice 42 Voip
  destination-pattern 42..
  session target ipv4:10.42.100.8
