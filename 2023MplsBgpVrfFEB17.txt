@@ -941,7 +941,11 @@ config t
  ip vrf clientPNBa
    rd 999:3
    route-target 64999:3 
-   exit
+ ip vrf clientEASTWESTbankA
+  rd 666:666
+  route-target 69666:4
+exit
+
 ***
 R1:pez
 config t
@@ -954,7 +958,11 @@ config t
  ip vrf clientPNBb
   rd 999:3
   route-target 64999:3
-  exit
+ ip vrf clientEASTWESTbankB
+  rd 666:666
+  route-target 69666:4
+exit
+
 **********
 R4-PEa#show ip vrf
   Name                             Default RD          Interfaces
@@ -993,6 +1001,7 @@ config t
   ip vrf forwarding clientPNBb
   ip address 10.1.1.6 255.255.255.252
   no shut
+end
 
 R1-PEz#bp
 Interface                  IP-Address      OK? Method Status                Protocol
