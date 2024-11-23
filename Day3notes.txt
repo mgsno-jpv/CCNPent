@@ -1,0 +1,235 @@
+CCNP Enterprise:
+Minimum Skills:
+ServerSide. 
+1. ADS (ldap)
+2. x.500 CertificateServiceAuthority
+3. DHCP Server
+4. Network Policy Server: radius, 802.1x authentication.
+
+task1: Radius authentication for Switches/VoiceGateway
+Authentication/Authorization/Accounting
+Taas/Baba:
+config t
+AAA new-model
+username admin password pass
+radius-server host 10.41.1.8 key secret123
+ip radius source-interface vlan 1
+aaa authorization exec default group radius
+aaa authentication login default group radius local
+line vty 0 14
+ login authentication default
+end
+
+task2: Balik CCNA:
+
+config t
+no AAA new-model
+no radius-server host 10.41.1.8 key secret123
+config t
+line vty 0 14
+ no login
+end
+
+task3: Deploying Cisco 802.1x port based authentication using windows certificates:
+
+config t
+aaa new-model
+aaa authentication dot1x default group radius
+aaa authorization network default group radius
+aaa accounting dot1x default start-stop group radius
+dot1x system-auth-control
+radius-server host 10.41.1.8 auth-port 1812 acct-port 1813 key secret 123
+
+int fa 0/3
+ switchport mode access
+ authentication port-control auto
+ dot1x port-control auto
+ spanning-tree portfast
+end
+
+
+Newer/IOS/linux 802.1x config:
+conf t
+no new aaa new-model
+aaa new-model
+dot1x system-auth-control
+radius-server host 10.41.1.8 auth-port 1812 acct-port 1813 key secret123
+aaa authentication dot1x default group radius
+aaa authorization network default group radius
+aaa accounting dot1x default start-stop group radius
+
+interface fastEthernet 0/5
+ switchport mode access
+ authentication port-control auto
+ dot1x pae authenticator
+ spanning-tree portfast
+end
+
+
+show checkpoint
+rollback running-config checkpoint config1
+
+task5:CCNP ENCOR SKILL NO.5 LEARN NEXUS VS. CATALYST
+   $$$$$$$$$$$ bawal ang copy/paste $$$$$$$$$
+VXLAN - vlan for datacenter: eastwest traffic
+
+show feature
+config t
+feature ospf
+feature nv overlay
+feature vn-segment-vlan-based
+system jumbomtu 9216
+end
+copy run start
+
+nexus JP
+VXLAN config DCJP
+config t
+router ospf 10
+exit
+
+int e1/1
+ no switchport
+ ip address 100.1.1.1/30
+ ip router ospf 10 area 0
+ no shutdown
+exit
+
+int loopback 0
+ ip address 10.10.10.10/32
+ ip router ospf 10 area 0
+exit
+
+vlan 50
+ vn-segment 5000
+exit
+
+int e1/5-6
+ switchport
+ switchport access vlan 50
+exit
+
+interface nve 1
+ no shutdown
+ source-interface loopback 0
+ member vni 5000
+ ingress-replication protocol static
+ peer-ip 20.20.20.20
+exit
+
+nexus PH
+VXLAN config DCJP
+config t
+router ospf 10
+exit
+
+int e1/1
+ no switchport
+ ip address 100.1.1.2/30
+ ip router ospf 10 area 0
+ no shutdown
+exit
+
+int loopback 0
+ ip address 20.20.20.20/32
+ ip router ospf 10 area 0
+exit
+
+vlan 50
+ vn-segment 5000
+exit
+
+int e1/5-6
+ switchport
+ switchport access vlan 50
+exit
+
+interface nve 1
+ no shutdown
+ source-interface loopback 0
+ member vni 5000
+ ingress-replication protocol static
+ peer-ip 10.10.10.10
+exit
+
+
+task6: LISP for IP Cameras, IOT
+
+R1:
+config t
+no logging console
+line vty 0 14
+exec-timeout 0 0
+int gi 1
+ ip add 192.168.101.11 255.255.255.0
+ no shut
+
+
+TASK7: Configure VPN
+
+H - Hashing - SHA256
+E - Encryption - AES 256
+P - Protocol - ESP - Encapsulating Security Payload
+A - Authentication - PSK - Pre-Shared Key
+
+@R1
+conf t
+int gi 2
+ip add 192.168.102.10 255.255.255.0
+no shut
+
+@R2
+conf t
+int gi 2
+ip add 192.168.102.20 255.255.255.0
+no shut
+
+@r1
+config t
+no logging console
+no ip domain lookup
+ip route 0.0.0.0 0.0.0.0 200.0.0.20
+int gi 1
+ip add 200.0.0.10 255.255.255.0
+no shut
+int gi3
+ip add 10.10.10.1 255.255.255.0
+no shut
+
+@R2
+
+config t
+no logging console
+no ip domain lookup
+ip route 0.0.0.0 0.0.0.0 200.0.0.10
+int gi 1
+ip add 200.0.0.20 255.255.255.0
+no shut
+int gi3
+ip add 10.20.20.1 255.255.255.0
+no shut
+
+@Branch1
+sudo ifconfig eth0 10.10.10.10 netmask 255.255.255.0 up
+sudo route add default  gw 10.10.10.1
+
+
+@Branch2
+sudo ifconfig eth0 10.20.20.20 netmask 255.255.255.0 up
+sudo route add default  gw 10.20.20.1
+
+@SITE 1
+172.16.30.10
+255.255.255.0
+G1 / 200.0.0.10
+200.0.0.20
+88888888
+10.20.20.0 /24
+
+@SITE 2
+172.16.30.10
+255.255.255.0
+G1 / 200.0.0.20
+200.0.0.10
+88888888
+10.10.10.0 /24
