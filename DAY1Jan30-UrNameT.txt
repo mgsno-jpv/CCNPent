@@ -32,7 +32,7 @@ config t
 
 !@@@LeafSwitchONLY
 config t
-   hostname COREbaba12
+   hostname COREbaba41
    enable secret pass
    service password-encryption
    no logging console
