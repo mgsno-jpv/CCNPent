@@ -1,0 +1,165 @@
+lin2:
+
+sudo su
+ifconfig eth0 192.168.102.100 netmask 255.255.255.0 up
+route add default gw 192.168.102.123
+ping 192.168.102.11
+
+lin3:
+
+sudo su
+ifconfig eth0 192.168.103.100 netmask 255.255.255.0 up
+route add default gw 192.168.103.123
+ping 192.168.103.11
+
+cd /etc/ansible
+
+
+r1:
+config t
+no ip route 192.168.103.0 255.255.255.0 tunnel 1
+router ospf 1
+network 192.168.102.0 0.0.0.255 area 0
+network 172.16.0.0 0.0.255.255 area 0
+int gi3
+shutdown
+
+r2:
+config t
+no ip route 192.168.102.0 255.255.255.0 tunnel 1
+router ospf 1
+network 192.168.103.0 0.0.0.255 area 0
+network 172.16.0.0 0.0.255.255 area 0
+int gi3
+shutdown
+
+
+
+netflow
+
+@R1
+config t
+flow exporter Export-R1Flow
+ !destination 10.10.1.10
+ destination 192.168.102.1
+ source Loopback1
+ transport udp 2055
+!
+flow monitor Monitor-R1Flow
+ exporter Export-R1Flow
+ cache timeout inactive 30
+ cache timeout active 300
+ record netflow ipv4 original-input
+!
+interface loopback1
+ ip address 1.1.1.1 255.255.255.255
+!
+!interface Ethernet0/0
+interface gi 2
+ !ip address 10.10.1.2 255.255.255.0
+  ip add 192.168.102.11 255.255.255.0
+ ip ospf network point-to-point
+!
+router ospf 10
+ router-id 1.1.1.1
+ network 1.1.1.1 0.0.0.0 area 0
+ network 10.10.1.0 0.0.0.255 area 0
+
+
+Task 1. Enable Flexible NetFlow on R1 E0/0 [gi 2] in both directions using the pre-configured flow monitor.
+
+On R1:
+
+config t
+!interface e0/0
+interface gi 2
+ ip flow monitor Monitor-R1Flow input
+ ip flow monitor Monitor-R1Flow output
+
+
+
+CCNP ENCORtheory:CM-PM-SP
+
+Control plane Policing: control data entering Cisco Devices:
+allowed: icmp, telnet[23], ssh[22], https[443],
+
+
+task1: make a COPP to prevent large pings
+@R1
+config t
+ip access-list extended 100
+ permit icmp any any
+class-map NOPINGLAKI
+ match access-group 100
+policy-map STOPBIGPING
+ class NOPINGLAKI
+ police 8000 conform-action transmit exceed-action drop
+ exit
+control-plane
+ service-policy input STOPBIGPING
+end
+
+show policy-map control-plane
+
+task2: pwede ssh, bawas BW telnet, bawal icmp:
+@R1
+config t
+ip access-list extended TELNET
+ permit tcp any any eq 23
+ip access-list extended SSH
+ permit tcp any any eq 22
+ip access-list extended ICMP
+ permit icmp any any
+!!class-map
+class-map match-all CMTEL
+ match access-group name TELNET
+class-map match-all CMSSH
+ match access-group name SSH
+class-map match-all CMICMP
+ match access-group name ICMP
+!!POLICY-MAP
+policy-map PMCOPP
+ class CMTEL
+  police 8000 conform-action transmit exceed-action drop
+ class CMSSH
+  police 500000 conform-action transmit exceed-action transmit
+ class CMICMP
+  police rate 4 pps conform-action transmit exceed-action drop
+ class class-default
+  police 12000 conform-action transmit exceed-action transmit
+!!ServicePolicy:
+control-plane
+ service-policy input PMCOPP
+end
+
+
+config t
+hostname COREBaba-41
+enable secret pass
+service password-
+
+
+
+config t
+   hostname COREBaba-41
+   enable secret pass
+   service password-encryption
+   no logging console
+   no ip domain-lookup
+   line console 0
+     password pass
+     login
+     exec-timeout 0 0
+   Int Vlan 1
+     no shutdown
+	 ip add 10.41.1.4 255.255.255.0
+	 description MGMTDATA
+
+
+
+wireshark
+config t
+ no monitor session 11
+ monitor session 11 source interface FA 0/5, fa0/7,fa0/2,fa0/6,fa0/8 both
+ monitor session 11 destination interface fa 0/1
+ 
